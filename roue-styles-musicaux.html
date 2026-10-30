@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roue des Styles · Créateur de Prompt Suno</title>
+<meta name="description" content="Roue interactive pour générer des prompts Suno complets : style, structure, lyrics et exclure. Tourne et copie.">
+<meta property="og:title" content="Roue des Styles · Créateur de Prompt Suno">
+<meta property="og:description" content="Génère des prompts Suno détaillés en un spin. Style, structure, lyrics et exclure prêts à copier.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Roue des Styles · Créateur de Prompt Suno">
+<meta name="twitter:description" content="Tourne la roue et obtiens un prompt Suno complet prêt à coller.">
+<meta name="twitter:image" content="/og.jpg">
+<meta property="x:game:image" content="/x-banner.jpg">
+<style>
+  :root {
+    --bg: #0e0808;
+    --orange: #ff4b23;
+    --pink: #fd429c;
+    --cream: #faf7f5;
+    --muted: #c2b8b0;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    font-family: system-ui, sans-serif;
+    color: var(--cream);
+    padding: 16px 10px 40px;
+  }
+  h1 { margin: 8px 0 2px; font-weight: 500; letter-spacing: 1.5px; text-shadow: 0 0 18px var(--orange); }
+  .subtitle { font-style: italic; font-size: 14px; color: var(--muted); margin: 0 0 18px; }
+  #info-section { width: 100%; max-width: 680px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  #result { font-size: 24px; min-height: 32px; text-align: center; font-weight: 500; opacity: 0; transition: opacity 0.4s; }
+  #result.visible { opacity: 1; }
+  .block { width: 100%; max-width: 620px; background: rgba(26,18,18,0.85); border: 1px solid #3a2a28; border-radius: 12px; padding: 12px 16px; display: none; flex-direction: column; gap: 8px; opacity: 0; }
+  .block.show { display: flex; }
+  .block.reveal { animation: reveal 1.4s ease forwards; }
+  @keyframes reveal { to { opacity: 1; } }
+  .block-label { font-size: 13.5px; color: #fd9a7a; margin: 0; font-weight: 600; }
+  textarea { width: 100%; background: #120c0c; color: var(--cream); border: 1px solid #4a322c; border-radius: 8px; padding: 10px; font-family: inherit; font-size: 13.5px; resize: vertical; box-sizing: border-box; }
+  #suno-prompt { min-height: 90px; }
+  #structure-lyrics { min-height: 160px; }
+  #exclude-prompt { min-height: 70px; }
+  .copy-btn { align-self: flex-end; background: linear-gradient(90deg, var(--orange), var(--pink)); color: white; border: none; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+  .copy-btn.copied { background: #02d95c; }
+  #settings-block { font-size: 14px; line-height: 1.55; color: var(--muted); }
+  #settings-block strong { color: var(--cream); }
+  #wheel-container { position: relative; width: 500px; height: 500px; margin: 10px 0; transition: transform 0.7s; }
+  #wheel-container.descended { transform: translateY(24px); }
+  canvas { border-radius: 50%; box-shadow: 0 0 50px rgba(255,75,35,0.4); }
+  #spin-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 112px;
+    height: 112px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #2a1a18, #0a0606 70%);
+    border: 3px solid #ff4b23;
+    box-shadow:
+      0 0 0 1px rgba(255,75,35,0.4),
+      0 8px 20px rgba(0,0,0,0.6),
+      0 0 24px rgba(255,75,35,0.5),
+      inset 0 2px 4px rgba(255,255,255,0.15);
+    color: #faf7f5;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    z-index: 10;
+    transition: transform 0.12s ease, box-shadow 0.2s ease;
+  }
+  #spin-btn:hover {
+    transform: translate(-50%, -50%) scale(1.04);
+    box-shadow:
+      0 0 0 1px rgba(255,75,35,0.6),
+      0 10px 24px rgba(0,0,0,0.7),
+      0 0 32px rgba(255,75,35,0.7),
+      inset 0 2px 4px rgba(255,255,255,0.2);
+  }
+  #spin-btn:active, #spin-btn.pressing {
+    transform: translate(-50%, -50%) scale(0.94) translateY(2px);
+    box-shadow:
+      0 0 0 1px rgba(255,75,35,0.3),
+      0 3px 8px rgba(0,0,0,0.5),
+      0 0 16px rgba(255,75,35,0.4),
+      inset 0 1px 2px rgba(0,0,0,0.4);
+  }
+  #spin-btn.spinning {
+    animation: btnPulse 0.6s ease-in-out infinite alternate;
+  }
+  @keyframes btnPulse {
+    from { box-shadow: 0 0 20px rgba(255,75,35,0.5), inset 0 0 8px rgba(255,75,35,0.3); }
+    to { box-shadow: 0 0 36px rgba(255,75,35,0.9), inset 0 0 14px rgba(255,75,35,0.5); }
+  }
+
+  .pointer {
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 14px solid transparent;
+    border-right: 14px solid transparent;
+    border-top: 28px solid #fd429c;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)) drop-shadow(0 0 8px #fd429c);
+    z-index: 5;
+    transition: transform 0.15s ease, filter 0.2s;
+  }
+  .pointer.alive {
+    animation: pointerBounce 0.5s ease;
+  }
+  .pointer.selected {
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6)) drop-shadow(0 0 16px #ff6b3d);
+    transform: translateX(-50%) scale(1.15);
+  }
+  @keyframes pointerBounce {
+    0% { transform: translateX(-50%) translateY(0); }
+    40% { transform: translateX(-50%) translateY(6px); }
+    100% { transform: translateX(-50%) translateY(0); }
+  }
+
+  /* Mobile : zoom sur le haut de la roue + bouton SPIN */
+  @media (max-width: 700px) {
+    body { padding: 8px 6px 30px; }
+    h1 { font-size: 22px; margin: 6px 0 2px; }
+    .subtitle { font-size: 13px; margin-bottom: 10px; }
+    #info-section { max-width: 100%; gap: 8px; }
+    #result { font-size: 20px; }
+    .block { max-width: 100%; padding: 10px 12px; }
+    textarea { font-size: 13px; }
+    #wheel-container {
+      width: 340px;
+      height: 340px;
+      margin: 4px 0 16px;
+      transform: scale(1.35);
+      transform-origin: center top;
+    }
+    #wheel-container.descended { transform: scale(1.35) translateY(18px); }
+    canvas { width: 340px; height: 340px; }
+    #spin-btn { width: 84px; height: 84px; font-size: 16px; }
+    .pointer { border-left-width: 10px; border-right-width: 10px; border-top-width: 20px; top: -12px; }
+  }
+</style>
+</head>
+<body>
+  <h1>ROUE DES STYLES</h1>
+  <p class="subtitle">créateur de prompt</p>
+  <div id="info-section">
+    <div id="result"></div>
+    <div id="prompt-container" class="block">
+      <p class="block-label">Prompt Style Suno (prêt à copier) :</p>
+      <textarea id="suno-prompt" readonly></textarea>
+      <button class="copy-btn" data-target="suno-prompt">Copier le prompt</button>
+    </div>
+    <div id="structure-container" class="block">
+      <p class="block-label">Structure & Lyrics (prêt à copier) :</p>
+      <textarea id="structure-lyrics" readonly></textarea>
+      <button class="copy-btn" data-target="structure-lyrics">Copier la structure</button>
+    </div>
+    <div id="exclude-container" class="block">
+      <p class="block-label">Exclure (prêt à copier) :</p>
+      <textarea id="exclude-prompt" readonly></textarea>
+      <button class="copy-btn" data-target="exclude-prompt">Copier l'exclure</button>
+    </div>
+    <div id="settings-container" class="block">
+      <p class="block-label">Réglages conseillés pour un 1er essai :</p>
+      <div id="settings-block"></div>
+    </div>
+  </div>
+  <div id="wheel-container">
+    <div class="pointer"></div>
+    <canvas id="wheel" width="500" height="500"></canvas>
+    <button id="spin-btn">SPIN</button>
+  </div>
+<script>
+const genres = ["Trance","House","Techno","Gospel","Funk","Indie","Soul","Punk","Metal","Folk","Reggae","Blues","Jazz","Gothic Rock","Pop","Rock","Classical","Hip-Hop","R&B","Country","EDM","Dubstep","Reggaeton","Dancehall","Jazz Fusion","Celtic","Trap","Lo-fi Hip-Hop","New Wave","Industrial","Bluegrass","Ambient","Ska"];
+const canvas = document.getElementById('wheel');
+const ctx = canvas.getContext('2d');
+const spinBtn = document.getElementById('spin-btn');
+const resultEl = document.getElementById('result');
+const promptContainer = document.getElementById('prompt-container');
+const structureContainer = document.getElementById('structure-container');
+const excludeContainer = document.getElementById('exclude-container');
+const settingsContainer = document.getElementById('settings-container');
+const sunoPromptEl = document.getElementById('suno-prompt');
+const structureEl = document.getElementById('structure-lyrics');
+const excludeEl = document.getElementById('exclude-prompt');
+const settingsBlock = document.getElementById('settings-block');
+const wheelContainer = document.getElementById('wheel-container');
+const centerX = 250, centerY = 250, radius = 230;
+const numSegments = genres.length;
+const arc = (2 * Math.PI) / numSegments;
+const colors = ['#3a1a14','#5c241c','#7a2e22','#9a3828','#4a1c22','#6b2830','#3a1a14','#5c241c'];
+let currentAngle = 0, spinning = false;
+
+function generateSunoPrompt(g) {
+  const t = {
+    "Trance": "Uplifting progressive trance, long euphoric build-up, massive supersaw leads, rolling deep bassline, intricate arpeggios, emotional pads, 138 BPM, festival energy, crystalline production, optional soft female vocals",
+    "House": "Deep soulful house, warm rolling bassline, soft filtered pads, crisp percussion, lush chords, summer vibe, 122 BPM, optional smooth vocals, polished club production",
+    "Techno": "Dark hypnotic techno, relentless 4/4 kick, acid 303 bassline, industrial textures, evolving arpeggios, warehouse atmosphere, 130 BPM, instrumental, tight production",
+    "Gospel": "Uplifting gospel, powerful choir harmonies, rich organ and piano, hand claps, joyful spiritual energy, 100 BPM, passionate vocals, live feel",
+    "Funk": "Classic funk, slap bass, tight drums, wah guitar, punchy horns, energetic and playful, 105 BPM, optional funky vocals",
+    "Indie": "Indie rock, jangly guitars, dreamy reverb vocals, warm analog drums, emotional, 120 BPM",
+    "Soul": "Smooth soul, warm intimate vocals, lush strings, Rhodes piano, groovy bass, 90 BPM, vintage feel",
+    "Punk": "Raw punk rock, fast distorted guitars, aggressive drums, shouted vocals, high energy, 180 BPM",
+    "Metal": "Heavy metal, crushing riffs, double kick, powerful vocals, dark atmosphere, 140 BPM, high gain",
+    "Folk": "Acoustic folk, fingerstyle guitar, soft storytelling vocals, natural ambience, 85 BPM, organic",
+    "Reggae": "Classic reggae, offbeat skank, deep bass, relaxed drums, positive vibe, 80 BPM",
+    "Blues": "Electric blues, expressive guitar solos, shuffle rhythm, soulful vocals, smoky atmosphere, 90 BPM",
+    "Jazz": "Smooth jazz, saxophone lead, walking bass, brushed drums, warm piano, vinyl atmosphere, 95 BPM",
+    "Gothic Rock": "Dark gothic rock, reverb guitars, deep vocals, dramatic melancholic, 110 BPM",
+    "Pop": "Catchy modern pop, bright synth hooks, polished production, memorable chorus, 120 BPM",
+    "Rock": "Classic rock, powerful guitar riffs, solid drums, energetic vocals, stadium feel, 130 BPM",
+    "Classical": "Orchestral classical, rich strings, woodwinds, elegant dynamic, emotional, instrumental",
+    "Hip-Hop": "Modern hip-hop, heavy 808 bass, trap hi-hats, atmospheric samples, confident flow, 140 BPM",
+    "R&B": "Contemporary R&B, smooth sensual vocals, lush chords, groovy bass, intimate, 90 BPM",
+    "Country": "Modern country, acoustic guitar, pedal steel, storytelling vocals, warm production, 100 BPM",
+    "EDM": "High energy EDM, massive drops, supersaws, punchy kicks, vocal chops, 128 BPM",
+    "Dubstep": "Heavy dubstep, aggressive wobble bass, half-time drums, dark energy, 140 BPM, instrumental",
+    "Reggaeton": "Reggaeton, dembow rhythm, deep bass, catchy melody, danceable, 95 BPM",
+    "Dancehall": "Energetic dancehall, heavy riddim, rhythmic vocals, Caribbean vibe, 100 BPM",
+    "Jazz Fusion": "Jazz fusion, complex rhythms, electric piano, saxophone, funk bass, instrumental",
+    "Celtic": "Celtic folk, lively fiddle and flute, acoustic guitar, traditional atmosphere",
+    "Trap": "Modern trap, sliding 808s, rapid hi-hats, dark pads, 140 BPM",
+    "Lo-fi Hip-Hop": "Lo-fi hip-hop, dusty vinyl samples, soft drums, mellow chords, chill vibe, 80 BPM, instrumental",
+    "New Wave": "80s new wave, analog synths, punchy drums, retro atmosphere, catchy, 120 BPM",
+    "Industrial": "Industrial, harsh distorted synths, mechanical rhythms, dark aggressive, 130 BPM",
+    "Bluegrass": "Bluegrass, fast banjo and fiddle, acoustic guitar, lively traditional",
+    "Ambient": "Cinematic ambient, evolving pads, ethereal spacious, meditative, instrumental",
+    "Ska": "Upbeat ska, offbeat guitar, bright horns, energetic drums, fun danceable, 140 BPM"
+  };
+  return (t[g] || g + " music track, detailed production") + ", high fidelity, professional mastering";
+}
+function generateStructure(g) {
+  const inst = ["Trance","Techno","Jazz","Classical","Jazz Fusion","Ambient","Lo-fi Hip-Hop","EDM","Dubstep"].includes(g);
+  return (inst ? "[Instrumental Intro]\n[Main Theme]\n[Breakdown]\n[Main Theme]\n[Outro]" : "[Intro]\n[Verse 1]\n[Chorus]\n[Verse 2]\n[Chorus]\n[Bridge]\n[Outro]") + "\n\n---\nAdapte les paroles. Garde les balises [Verse] [Chorus] etc.";
+}
+function generateExclude(g) {
+  const e = {
+    "Techno": "no vocals, no lyrics, no speech, no acoustic",
+    "Ambient": "no drums, no vocals, no beat, no percussion",
+    "Metal": "no soft ballad, no acoustic main, no jazz",
+    "Classical": "no drums, no electric guitar, no vocals",
+    "Lo-fi Hip-Hop": "no loud metal, no aggressive vocals, no EDM drops"
+  };
+  return e[g] || "no off-style elements, no low quality, no unwanted genres";
+}
+function getSettings(g) {
+  const male = ["Metal","Punk","Rock","Blues","Country","Hip-Hop","Trap"].includes(g);
+  const female = ["Pop","Soul","R&B","Gospel","Indie"].includes(g);
+  return { weirdness: "30–40 %", styleInfluence: "70–80 %", variety: "0–20 %", vocal: male ? "Male" : female ? "Female" : "Male ou Female" };
+}
+function drawWheel(angle=0, highlight=-1) {
+  ctx.clearRect(0,0,500,500);
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate(angle);
+  for (let i=0; i<numSegments; i++) {
+    const start = i*arc - Math.PI/2;
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.arc(0,0,radius, start, start+arc);
+    ctx.closePath();
+    ctx.fillStyle = (i===highlight) ? '#ff6b3d' : colors[i%colors.length];
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.stroke();
+    ctx.save();
+    ctx.rotate(start + arc/2);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(genres[i], radius-16, 4);
+    ctx.restore();
+  }
+  ctx.beginPath();
+  ctx.arc(0,0,52,0,Math.PI*2);
+  ctx.fillStyle = '#0e0808';
+  ctx.fill();
+  ctx.strokeStyle = '#ff4b23';
+  ctx.lineWidth = 5;
+  ctx.stroke();
+  ctx.restore();
+}
+function playGenrePreview(genre) {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  const actx = new AC();
+  const now = actx.currentTime;
+  const master = actx.createGain();
+  master.gain.value = 0.15;
+  master.connect(actx.destination);
+
+  const bpm = { Trance:138, House:122, Techno:130, Metal:140, "Hip-Hop":90, Trap:140, Ambient:70, Jazz:95, Punk:180, Reggae:80 }[genre] || 110;
+  const beat = 60 / bpm;
+  const dur = 2.4;
+
+  function kick(t) {
+    const o = actx.createOscillator();
+    const g = actx.createGain();
+    o.frequency.setValueAtTime(140, t);
+    o.frequency.exponentialRampToValueAtTime(40, t+0.07);
+    g.gain.setValueAtTime(0.9, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t+0.22);
+    o.connect(g); g.connect(master);
+    o.start(t); o.stop(t+0.25);
+  }
+  function note(t, f, type='sawtooth') {
+    const o = actx.createOscillator();
+    const g = actx.createGain();
+    o.type = type;
+    o.frequency.value = f;
+    g.gain.setValueAtTime(0.35, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t+0.18);
+    o.connect(g); g.connect(master);
+    o.start(t); o.stop(t+0.2);
+  }
+
+  const steps = Math.floor(dur / beat);
+  for (let i = 0; i < steps; i++) {
+    const t = now + i * beat;
+    if (['Techno','House','Trance','EDM','Dubstep'].includes(genre) && i % 4 === 0) kick(t);
+    if (genre === 'Trance' || genre === 'House') note(t, 220 + (i%4)*55);
+    if (genre === 'Metal' || genre === 'Punk') note(t, 80 + (i%3)*40, 'square');
+    if (genre === 'Ambient' || genre === 'Classical') {
+      if (i % 6 === 0) note(t, 196, 'sine');
+    }
+    if (genre === 'Jazz' || genre === 'Soul') note(t, 261 + (i%3)*30, 'triangle');
+  }
+  master.gain.setValueAtTime(0.15, now + dur - 0.3);
+  master.gain.linearRampToValueAtTime(0.001, now + dur);
+  setTimeout(() => actx.close(), (dur+0.2)*1000);
+}
+function revealBlocks() {
+  [promptContainer, structureContainer, excludeContainer, settingsContainer].forEach((b,i)=>{
+    setTimeout(()=>{ b.classList.add('show'); setTimeout(()=>b.classList.add('reveal'),20); }, 700*i);
+  });
+}
+function spin() {
+  if (spinning) return;
+  spinning = true;
+  spinBtn.disabled = true;
+  resultEl.textContent = 'Ça tourne...';
+  resultEl.classList.remove('visible');
+  [promptContainer, structureContainer, excludeContainer, settingsContainer].forEach(b => b.classList.remove('show','reveal'));
+  wheelContainer.classList.remove('descended');
+
+  const targetIndex = Math.floor(Math.random() * numSegments);
+  const localCenter = targetIndex * arc - Math.PI / 2 + arc / 2;
+  let needed = (-Math.PI / 2 - localCenter);
+  needed = ((needed % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+  const spins = 5 + Math.random() * 2;
+  const preciseTarget = currentAngle + spins * 2 * Math.PI + needed;
+  const duration = 5500;
+  const startTime = Date.now();
+  const startAngle = currentAngle;
+
+  function step() {
+    const elapsed = Date.now() - startTime;
+    const t = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    currentAngle = startAngle + (preciseTarget - startAngle) * eased;
+    drawWheel(currentAngle);
+
+    if (t < 1) {
+      requestAnimationFrame(step);
+    } else {
+      finish(targetIndex);
+    }
+  }
+
+  function finish(idx) {
+    spinning = false;
+    spinBtn.disabled = false;
+    currentAngle = preciseTarget;
+
+    // Recalcul réel sous le pointeur
+    let best = 0, bestDist = Infinity;
+    const pointer = -Math.PI / 2;
+    for (let i = 0; i < numSegments; i++) {
+      const lc = i * arc - Math.PI / 2 + arc / 2;
+      let wc = (lc + currentAngle) % (2 * Math.PI);
+      if (wc < 0) wc += 2 * Math.PI;
+      let p = (pointer + 2 * Math.PI) % (2 * Math.PI);
+      let d = Math.abs(wc - p);
+      if (d > Math.PI) d = 2 * Math.PI - d;
+      if (d < bestDist) { bestDist = d; best = i; }
+    }
+    const finalIndex = best;
+    const winner = genres[finalIndex];
+
+    drawWheel(currentAngle, finalIndex);
+    resultEl.textContent = 'Style choisi : ' + winner;
+    resultEl.classList.add('visible');
+    wheelContainer.classList.add('descended');
+
+    sunoPromptEl.value = generateSunoPrompt(winner);
+    structureEl.value = generateStructure(winner);
+    excludeEl.value = generateExclude(winner);
+    const s = getSettings(winner);
+    settingsBlock.innerHTML = `<div><strong>Weirdness :</strong> ${s.weirdness}</div><div><strong>Style Influence :</strong> ${s.styleInfluence}</div><div><strong>Variety :</strong> ${s.variety}</div><div><strong>Vocal :</strong> ${s.vocal}</div>`;
+
+    setTimeout(() => {
+      revealBlocks();
+      try { playGenrePreview(winner); } catch(e) {}
+    }, 300);
+  }
+
+  requestAnimationFrame(step);
+}
+document.querySelectorAll('.copy-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const ta = document.getElementById(btn.dataset.target);
+    ta.select();
+    document.execCommand('copy');
+    btn.textContent = 'Copié !';
+    btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent = btn.textContent.replace('Copié !','Copier'); btn.classList.remove('copied'); }, 1400);
+  });
+});
+spinBtn.addEventListener('click', spin);
+drawWheel(0);
+</script>
+</body>
+</html>
